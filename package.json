@@ -1,0 +1,23 @@
+{
+  "name": "modern-config-cli",
+  "version": "0.0.1",
+  "bin": {
+    "config-cli": "./modules/modern-config-cli.js"
+  },
+  "description": "Modern JavaScript Config Generator CLI",
+  "main": "./modules/modern-config.cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["cli", "config", "webpack", "babel"],
+  "author": "Whien_Liou <sal95610@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/madeinfree/modern-config-cli.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "prettier": "^1.7.4",
+    "yargs": "^10.0.3"
+  }
+}
