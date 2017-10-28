@@ -6,10 +6,12 @@ const yargs = require('yargs');
 
 const { typeOf, isString } = require('./utils/isTypes');
 const { throwError } = require('./utils/logs');
+const { createFolder } = require('./utils/fs');
 
 const argv = yargs
   .usage('Usage: $0 <command> [options]')
   .command('generate', 'Generate all config file.')
+  .command('cra', 'Generate react application by create-react-app')
   .alias('o', 'out-dir')
   .nargs('o', 1)
   .describe('o', 'Specifies file folder.')
@@ -29,7 +31,7 @@ class ModernConfigCLI {
   constructor(options) {
     this.command = options.useCommand;
     this.files = options.useFilesOption || 'webpack,babel';
-    this.outdir = options.useOutdirOption;
+    this.outdir = options.useOutdirOption || './';
     this.config = {
       filepath: filename =>
         this.outdir
@@ -81,6 +83,9 @@ class ModernConfigCLI {
         }
       });
     }
+    if (this.command === 'cra') {
+      console.log('create-react-app running...');
+    }
   }
 }
 
@@ -90,4 +95,7 @@ const mc = new ModernConfigCLI({
   useOutdirOption
 });
 
-mc.run();
+createFolder(mc.outdir).then(done => {
+  if (done) console.log(`Create new folder ${mc.outdir}`);
+  mc.run();
+});
