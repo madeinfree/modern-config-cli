@@ -10,65 +10,84 @@ const { throwError } = require('./utils/logs');
 const argv = yargs
   .usage('Usage: $0 <command> [options]')
   .command('generate', 'Generate all config file.')
+  .alias('o', 'out-dir')
+  .nargs('o', 1)
+  .describe('o', 'Specifies file folder.')
   .alias('f', 'file')
   .nargs('f', 1)
   .describe('f', 'Create specifies config file. [webpack, bable]')
+  .example('config-cli generate', 'Create webpack and babel config.')
+  .example('config-cli generate -f webpack', 'Create webpack.config.js config.')
   .help('h')
   .alias('h', 'help').argv;
 
-const defaultConfig = {
-  filepath: filename => path.resolve(filename)
-};
-const isGenerate = argv._[0] === 'generate';
-const useFileOptions = argv.file || argv.f;
+const useCommand = argv._[0];
+const useFilesOption = argv.file || argv.f;
+const useOutdirOption = argv['out-dir'] || argv.o;
 
-const webpackGeneratePromise = options => {
-  return new Promise((resolve, reject) => {
-    const webpackTemplate = require('./template/webpack.template').default;
-    fs.writeFile(
-      defaultConfig.filepath('webpack.config.js'),
-      webpackTemplate(),
-      () => {
-        resolve();
-      }
-    );
-  });
-};
+class ModernConfigCLI {
+  constructor(options) {
+    this.command = options.useCommand;
+    this.files = options.useFilesOption || 'webpack,babel';
+    this.outdir = options.useOutdirOption;
+    this.config = {
+      filepath: filename =>
+        this.outdir
+          ? path.resolve(this.outdir, filename)
+          : path.resolve(filename)
+    };
+  }
 
-const babelGeneratePromise = options => {
-  return new Promise((resolve, reject) => {
-    const webpackTemplate = require('./template/babel.template').default;
-    fs.writeFile(defaultConfig.filepath('.babelrc'), webpackTemplate(), () => {
+  writeFilePromise(resolve, { filename, template }) {
+    fs.writeFile(this.config.filepath(filename), template(), () => {
       resolve();
     });
-  });
-};
+  }
 
-if (isGenerate) {
-  if (useFileOptions) {
-    if (!isString(useFileOptions))
-      throwError(
-        `Specifies file name expect string but got ${typeOf(
-          useFileOptions
-        )}: ${useFileOptions}`
-      );
-    switch (useFileOptions) {
-      case 'webpack':
-        return webpackGeneratePromise()
-          .then(done => console.log('Generate webpack done'))
-          .catch(err => console.log(err));
-      case 'babel':
-        return babelGeneratePromise()
-          .then(done => console.log('Generate babel done'))
-          .catch(err => console.log(err));
-      default:
-        throwError(`Specifies file only support 'webpack' and 'babel'`);
-    }
-  } else {
-    Promise.all([webpackGeneratePromise(), babelGeneratePromise()])
-      .then(done => console.log('Generate done.'))
-      .catch(err => {
-        console.log(err);
+  webpackGeneratePromise() {
+    return new Promise((resolve, reject) => {
+      const webpackTemplate = require('./template/webpack.template').default;
+      this.writeFilePromise(resolve, {
+        filename: 'webpack.config.js',
+        template: webpackTemplate
       });
+    });
+  }
+
+  babelGeneratePromise() {
+    return new Promise((resolve, reject) => {
+      const babelTemplate = require('./template/babel.template').default;
+      this.writeFilePromise(resolve, {
+        filename: '.babelrc',
+        template: babelTemplate
+      });
+    });
+  }
+
+  run() {
+    if (this.command === 'generate') {
+      this.files.split(',').forEach(file => {
+        switch (file) {
+          case 'webpack':
+            return this.webpackGeneratePromise()
+              .then(done => console.log('Generate webpack done'))
+              .catch(err => console.log(err));
+          case 'babel':
+            return this.babelGeneratePromise()
+              .then(done => console.log('Generate babel done'))
+              .catch(err => console.log(err));
+          default:
+            throwError(`Specifies file only support 'webpack' and 'babel'`);
+        }
+      });
+    }
   }
 }
+
+const mc = new ModernConfigCLI({
+  useCommand,
+  useFilesOption,
+  useOutdirOption
+});
+
+mc.run();
